@@ -21,14 +21,27 @@
 
 >This program provides a user-friendly environment for visualizing object detection and tracking, making it useful for tasks in video processing and computer vision.
 
-# How to use this project🧐
+# 🛠️ Usage
 
-First, clone our repository to your local machine.
-Once cloned, navigate to the downloaded folder and install the dependencies listed in the requirement.txt file.
-Below, I will briefly explain the usage instructions.
+- [Setup](#setup)
+
+
+## Setup
+
+
+Step 1️⃣ Clone our repository to your local machine.
+<br />
 
     git clone https://github.com/autJiahao/Real_Time_Track.git  # clone
+
+Step 2️⃣ Navigate to the downloaded folder and change directory to our file. 
+<br />
+
     cd Real_Time_Track
+
+Step️ 3️⃣ Install the dependencies listed in the requirement.txt file.
+<br />
+    
     pip install -r requirements.txt  # install
 
 헤더 #
