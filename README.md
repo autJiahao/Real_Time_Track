@@ -54,13 +54,41 @@ DEMO1,2,3,4,5
 
 ## Development
 
-1. Import Statements
-    
-    
-    Importing required modules and classes from different Python files and libraries. 
-   
-   
+1. Import Statements:
+    - Importing required modules and classes from different Python files and libraries. 
+   <br />
     <img width="997" alt="1  import" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/da31d603-10ce-4d44-a9c8-b8b9c0559085">
+
+2. Yolov5 Thread Class:
+    - A custom QThread subclass that runs YOLOv5 object detection on input frames.
+    - The run method performs the main detection and annotation logic.
+    - The send_img signal is emitted to send the annotated frames to the GUI.
+    <br />
+    <img width="1015" alt="2  yolov5 thread" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/169252ae-0848-4d65-b198-dc23a4e339ab">
+
+3. Deepsort Thread class:
+    - Another custom QThread subclass that runs DeepSort object tracking on the detected objects from YOLOv5.
+    - The run method performs the tracking and annotation logic.
+    - The send_img2 signal is emitted to send the annotated frames to the GUI.
+    <br />
+    <img width="1026" alt="3  deepsort thread" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/0584c701-ff0c-4951-a7ac-8e5d9dd8372b">
+
+4. Window Class:
+    - Inherits from QWidget and represents the main application window.
+    - Sets up the GUI elements, such as buttons, labels, and file dialogs.
+    - Handles button clicks and connects them to appropriate actions.
+    - Initializes instances of Yolov5Thread and DeepsortThread classes.
+    - Contains methods for displaying images in the GUI labels.
+    <br />
+    <img width="1037" alt="4  Window" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/498dbdd1-5fc3-4547-b488-d837a071142f">
+
+5. Main Execution:
+    - Initializes the QApplication and creates an instance of the Window class.
+    - Shows the window and starts the application event loop.
+    <br />
+    <img width="1016" alt="5  main execution" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/a6354d3e-bfcc-47ff-982d-18cc3ca62a81">
+
+
 
 
 
