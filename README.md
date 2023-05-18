@@ -99,7 +99,19 @@ DEMO1,2,3,4,5
 <img width="879" alt="yolo_init" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/90425de9-21d8-43ba-89bc-be00c47849b2">
 
 
-- __init__: In the initialization function, you set up the weights for the YOLOv5 model, the input source, the IOU threshold, and so on. This function is called only once when the thread is created.
+- **__init__**: In the initialization function, we set up the weights for the YOLOv5 's' model, the input source, the IOU threshold, and so on. This function is called only once when the thread is created.
+
+
+<img width="880" alt="yolo_run" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/11381465-93d5-4ce3-9641-9da95b725c87">
+
+
+- **run**: This method is called when the thread starts, and the actual object detection operation is performed here. First, it loads the YOLOv5 model, processes the input image, and performs object detection using the model. Then, it uses the Annotator object to display information about the detected objects on the screen. Finally, it sends the processing results for each image via the send_img signal.
+
+
+<img width="1109" alt="yolo_functions" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/6cca940b-0172-4567-87ae-79406d5ef398">
+
+
+- **attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, etc.**, are functions or classes provided by the YOLOv5 library. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, and adding annotations to the result.
 
 
 
