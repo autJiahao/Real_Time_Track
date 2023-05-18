@@ -93,26 +93,48 @@ DEMO1,2,3,4,5
 
 📈 **This code creates a thread to run the YOLOv5 object detection model using Python. YOLOv5 is one of the deep learning models used for object detection in the field of computer vision.**
 
-
+ - Yolov5 QThread
+ <br />
+ <br />
 <img width="879" alt="yolo_init" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/90425de9-21d8-43ba-89bc-be00c47849b2">
 
 
 > 🔎 **__init__**: In the initialization function, we set up the weights for the YOLOv5 's' model, the input source, the IOU threshold, and so on. This function is called only once when the thread is created.
-
+<br />
 
 <img width="880" alt="yolo_run" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/11381465-93d5-4ce3-9641-9da95b725c87">
 
 
 > 🔎 **run**: This method is called when the thread starts, and the actual object detection operation is performed here. First, it loads the YOLOv5 model, processes the input image, and performs object detection using the model. Then, it uses the Annotator object to display information about the detected objects on the screen. Finally, it sends the processing results for each image via the send_img signal.
-
+<br />
 
 <img width="1109" alt="yolo_functions" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/6cca940b-0172-4567-87ae-79406d5ef398">
 
 
 > 🔎 **attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, etc.**, are functions or classes provided by the YOLOv5 library. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, and adding annotations to the result.
+> <br />
+
+- DeepSort QThread
+<br />
+<br />
+<img width="924" alt="deepsort_run" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/6907df2b-30b7-4282-a514-1cbb02117660">
 
 
+> 🔎 **run**: This function is called when the thread starts, and the actual object detection and tracking work is performed here. It initializes DeepSORT and loads the YOLOv5 model. It then processes the input images and uses the model to detect objects, and then uses DeepSORT to track the detected objects. This operation is performed for all images in the input dataset, and tracking information is updated using the location information of the objects detected in the previous frame and the location information of the objects detected in the current frame. The tracked object's movement paths are stored in trajectories and this information is drawn as a line on the image.
+<br />
 
+<img width="777" alt="trajectory" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/31557050-0e38-48f3-8d96-46049e2daeca">
+
+
+> 🔎 **Trajectory**: The code utilizes the object tracking results to draw the trajectory of each object. By connecting the previous and current positions with lines, it visualizes the movement path of the objects. The trajectory drawing is achieved using the cv2.line function from OpenCV.
+<br />
+
+
+<img width="885" alt="deepsort_func" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/879fb5f3-891d-4086-b32f-91b682948ef3">
+<img width="794" alt="deepsort_func2" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/2f412db4-be50-4450-8853-fb744a707c09">
+
+
+> 🔎 Functions or classes like **get_config, DeepSort, select_device, attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, xyxy2xywh, etc.**, are provided by the YOLOv5 or DeepSORT libraries. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, adding annotations to results, bbox conversion, etc.
 
 ----
 헤더 #
