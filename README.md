@@ -24,7 +24,6 @@
 # 🛠️ Usage
 
 - [Setup](#setup)
-- [Information](#Information)
 - [Summary](#Summary)
 - [Analysis](#Analysis)
 
@@ -46,10 +45,6 @@ Step️ 3️⃣ Install the dependencies listed in the requirement.txt file.
     
     pip install -r requirements.txt  # install
 
-<br />
-
-## Information
-DEMO1,2,3,4,5
 
 <br />
 
@@ -93,9 +88,11 @@ DEMO1,2,3,4,5
 
 📈 **This code creates a thread to run the YOLOv5 object detection model using Python. YOLOv5 is one of the deep learning models used for object detection in the field of computer vision.**
 
+----
  - Yolov5 QThread
+----
  <br />
- <br />
+
 <img width="879" alt="yolo_init" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/90425de9-21d8-43ba-89bc-be00c47849b2">
 
 
@@ -114,8 +111,9 @@ DEMO1,2,3,4,5
 > 🔎 **attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, etc.**, are functions or classes provided by the YOLOv5 library. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, and adding annotations to the result.
 > <br />
 
+----
 - DeepSort QThread
-<br />
+----
 <br />
 <img width="924" alt="deepsort_run" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/6907df2b-30b7-4282-a514-1cbb02117660">
 
@@ -135,10 +133,54 @@ DEMO1,2,3,4,5
 
 
 > 🔎 Functions or classes like **get_config, DeepSort, select_device, attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, xyxy2xywh, etc.**, are provided by the YOLOv5 or DeepSORT libraries. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, adding annotations to results, bbox conversion, etc.
+<br />
 
 ----
+- Window (QWidget)
+----
+<br />
+
+<img width="710" alt="Window_open file" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/ae69e1dc-9bd2-43be-84bd-a3e6ec046a19">
+
+
+> 🔎 **open_file**: This function is called when the 'Select Video' button is pressed, allowing the user to select a video file.
+<br />
+
+
+<img width="743" alt="Window_ change model" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/4419f384-bc6f-4f2f-91d6-1fc0456dac34">
+
+
+> 🔎 **change_model**: This function is called when the user selects a different item in the combo box, changing the model.
+<br />
+
+
+<img width="721" alt="Window show img" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/45555269-fd67-41a5-8dc8-7c954fce14c1">
+
+
+> 🔎 **show_image, show_image2**: These functions receive the image processing results from the threads and display them in the GUI. show_image(object detection) receives the result from the YOLOv5 thread and displays it on the left label, while show_image2(detected object's trajectory) receives the result from the DeepSORT thread and displays it on the right label. They resize the image to fit the label and convert the image from BGR to RGB before displaying it.
+<br />
+
+
+
+
+----
+- Main Function
+----
+<br />
+
+<img width="680" alt="main func" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/9e33ae55-0ee9-463b-a42f-29245b9a89af">
+
+
+> 🔎 Lastly, the script at the bottom creates an instance of QApplication, an instance of Window, shows the window, and starts the application's event loop.
+
+<br />
+# Done
+
+
+<!-- 
 헤더 #
 줄바꿈 빈줄2줄
 소스코드 위아래띄고 4줄인덴
 구분선 -3개
 <>링크 혹은 [링크이름](링크주소)
+ -->
