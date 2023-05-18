@@ -93,6 +93,13 @@ DEMO1,2,3,4,5
 
 ## Analysis
 
+**This code creates a thread to run the YOLOv5 object detection model using Python. YOLOv5 is one of the deep learning models used for object detection in the field of computer vision.**
+
+
+<img width="879" alt="yolo_init" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/90425de9-21d8-43ba-89bc-be00c47849b2">
+
+
+- __init__: In the initialization function, you set up the weights for the YOLOv5 model, the input source, the IOU threshold, and so on. This function is called only once when the thread is created.
 
 
 
