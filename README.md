@@ -55,24 +55,25 @@ DEMO1,2,3,4,5
 
 ## Summary
 
+<br />
+<img width="924" alt="project pic" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/b2cfc158-d731-4279-b19a-7aaeb2e87c72">
+<br />
+
 1. Import Statements:
     - Importing required modules and classes from different Python files and libraries. 
    <br />
-    <img width="997" alt="1  import" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/da31d603-10ce-4d44-a9c8-b8b9c0559085">
 
 2. Yolov5 Thread Class:
     - A custom QThread subclass that runs YOLOv5 object detection on input frames.
     - The run method performs the main detection and annotation logic.
     - The send_img signal is emitted to send the annotated frames to the GUI.
     <br />
-    <img width="1015" alt="2  yolov5 thread" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/169252ae-0848-4d65-b198-dc23a4e339ab">
 
 3. Deepsort Thread class:
     - Another custom QThread subclass that runs DeepSort object tracking on the detected objects from YOLOv5.
     - The run method performs the tracking and annotation logic.
     - The send_img2 signal is emitted to send the annotated frames to the GUI.
     <br />
-    <img width="1026" alt="3  deepsort thread" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/0584c701-ff0c-4951-a7ac-8e5d9dd8372b">
 
 4. Window Class:
     - Inherits from QWidget and represents the main application window.
@@ -81,37 +82,34 @@ DEMO1,2,3,4,5
     - Initializes instances of Yolov5Thread and DeepsortThread classes.
     - Contains methods for displaying images in the GUI labels.
     <br />
-    <img width="1037" alt="4  Window" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/498dbdd1-5fc3-4547-b488-d837a071142f">
 
 5. Main Execution:
     - Initializes the QApplication and creates an instance of the Window class.
     - Shows the window and starts the application event loop.
     <br />
-    <img width="1016" alt="5  main execution" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/a6354d3e-bfcc-47ff-982d-18cc3ca62a81">
-
 
 
 ## Analysis
 
-**This code creates a thread to run the YOLOv5 object detection model using Python. YOLOv5 is one of the deep learning models used for object detection in the field of computer vision.**
+📈 **This code creates a thread to run the YOLOv5 object detection model using Python. YOLOv5 is one of the deep learning models used for object detection in the field of computer vision.**
 
 
 <img width="879" alt="yolo_init" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/90425de9-21d8-43ba-89bc-be00c47849b2">
 
 
-- **__init__**: In the initialization function, we set up the weights for the YOLOv5 's' model, the input source, the IOU threshold, and so on. This function is called only once when the thread is created.
+> 🔎 **__init__**: In the initialization function, we set up the weights for the YOLOv5 's' model, the input source, the IOU threshold, and so on. This function is called only once when the thread is created.
 
 
 <img width="880" alt="yolo_run" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/11381465-93d5-4ce3-9641-9da95b725c87">
 
 
-- **run**: This method is called when the thread starts, and the actual object detection operation is performed here. First, it loads the YOLOv5 model, processes the input image, and performs object detection using the model. Then, it uses the Annotator object to display information about the detected objects on the screen. Finally, it sends the processing results for each image via the send_img signal.
+> 🔎 **run**: This method is called when the thread starts, and the actual object detection operation is performed here. First, it loads the YOLOv5 model, processes the input image, and performs object detection using the model. Then, it uses the Annotator object to display information about the detected objects on the screen. Finally, it sends the processing results for each image via the send_img signal.
 
 
 <img width="1109" alt="yolo_functions" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/6cca940b-0172-4567-87ae-79406d5ef398">
 
 
-- **attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, etc.**, are functions or classes provided by the YOLOv5 library. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, and adding annotations to the result.
+> 🔎 **attempt_load, check_img_size, non_max_suppression, scale_coords, Annotator, etc.**, are functions or classes provided by the YOLOv5 library. They are responsible for tasks such as model loading, image size checking, non-max suppression, coordinate adjustment, and adding annotations to the result.
 
 
 
