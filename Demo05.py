@@ -1,6 +1,7 @@
 import sys
 import os
 import traceback
+import shutil
 import cv2
 
 import torch
@@ -23,7 +24,7 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))
 
 from utils.datasets import LoadImages
-from utils.general import (check_img_size, cv2, xyxy2xywh, non_max_suppression, scale_coords)
+from utils.general import (check_img_size, cv2, xyxy2xywh, non_max_suppression, scale_coords, increment_path)
 from utils.plots import Annotator, colors
 from utils.torch_utils import select_device
 from deep_sort.deep_sort import DeepSort
@@ -97,11 +98,10 @@ class Yolov5Thread(QThread):
 
                 if self.is_continue:
                     path, img, im0s, vid_cap = next(dataset)
-                    img = torch.from_numpy(img).to(device)  # 转化Tensor格式
+                    img = torch.from_numpy(img).to(device)
                     img = img.half() if half else img.float()  # uint8 to fp16/32
                     img /= 255.0  # 0 - 255 to 0.0 - 1.0
 
-                    # 在没有batch_size时, 添加一个轴
                     if img.ndimension() == 3:
                         img = img.unsqueeze(0)
 
@@ -117,7 +117,6 @@ class Yolov5Thread(QThread):
                         annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
                         if len(det):
-                            # Rescale boxes from img_size to im0 size 将预测信息映射到原图
                             det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
                             for *xyxy, conf, cls in reversed(det):
@@ -162,6 +161,14 @@ class DeepsortThread(QThread):
             hide_labels=False,  # hide labels
             hide_conf=False,  # hide confidences
             half=False,  # use FP16 half-precision inference
+            exist_ok=False,  # existing project/name ok, do not increment
+            project='runs/detect',  # save results to project/name
+            name='exp',  # save results to project/name
+            output_folder="",
+            evaluate="",
+            save_txt=False,  # save results to *.txt
+            save_conf=False,  # save confidences in --save-txt labels
+            save_crop=False,  # save cropped prediction boxes
             ):
 
         try:
@@ -183,6 +190,17 @@ class DeepsortThread(QThread):
 
             stride = int(model.stride.max())  # model stride
             imgsz = check_img_size(imgsz, s=stride)  # check image size
+
+            # .txt file. Hence, in that case, the output folder is not restored
+            if not evaluate:
+                if os.path.exists(output_folder):
+                    pass
+                    shutil.rmtree(output_folder)  # delete output folder
+                os.makedirs(output_folder)  # make new output folder
+
+            # Directories
+            save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
+            (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
             if half:
                 model.half()  # to FP16
@@ -243,6 +261,7 @@ class DeepsortThread(QThread):
 
                         outputs = deepsort.update(bbox_xywh, confs, im0)
                         print(outputs)
+
                         cmap = plt.get_cmap('tab20b')
                         colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
 
