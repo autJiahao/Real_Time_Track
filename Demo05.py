@@ -164,8 +164,6 @@ class DeepsortThread(QThread):
             exist_ok=False,  # existing project/name ok, do not increment
             project='runs/detect',  # save results to project/name
             name='exp',  # save results to project/name
-            output_folder="",
-            evaluate="",
             save_txt=False,  # save results to *.txt
             save_conf=False,  # save confidences in --save-txt labels
             save_crop=False,  # save cropped prediction boxes
@@ -190,13 +188,6 @@ class DeepsortThread(QThread):
 
             stride = int(model.stride.max())  # model stride
             imgsz = check_img_size(imgsz, s=stride)  # check image size
-
-            # .txt file. Hence, in that case, the output folder is not restored
-            if not evaluate:
-                if os.path.exists(output_folder):
-                    pass
-                    shutil.rmtree(output_folder)  # delete output folder
-                os.makedirs(output_folder)  # make new output folder
 
             # Directories
             save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
