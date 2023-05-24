@@ -291,7 +291,7 @@ class DeepsortThread(QThread):
                                     color_ = colors[int(id) % len(colors)]
                                     color_ = [i * 255 for i in color_]
 
-                                    label = f'ID:{id}'  # 在目标的边界框上显示目标的ID信息
+                                    label = f'ID:{id}'
                                     annotator.box_label(bboxes, label, color=color_)
 
                         prev_trackers = {track[-1]: track[:-1] for track in outputs}
@@ -332,7 +332,6 @@ class Window(QWidget):
 
         self.setGeometry(0, 0, 1280, 700)
 
-        # 创建播放按钮
         self.playBtn = QPushButton()
         self.playBtn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.playBtn.setEnabled(False)
@@ -348,7 +347,6 @@ class Window(QWidget):
         self.replayBtn.setEnabled(False)
         self.replayBtn.clicked.connect(self.replay)
 
-        # comboBox自动搜索.pt文件
         self.comboBox = QtWidgets.QComboBox()
         self.comboBox.clear()
         self.pt_list = os.listdir('./pt')
@@ -377,7 +375,6 @@ class Window(QWidget):
         self.splitter.addWidget(self.left_label)
         self.splitter.addWidget(self.right_label)
 
-        # QHBoxLayout用来水平布局.
         hbox = QHBoxLayout()
         hbox.addWidget(self.FileBtn)
         hbox.addWidget(self.comboBox)
@@ -385,7 +382,6 @@ class Window(QWidget):
         hbox.addWidget(self.pauseBtn)
         hbox.addWidget(self.replayBtn)
 
-        # QVBoxLayout用来垂直布局.
         vbox = QVBoxLayout()
         vbox.addWidget(self.splitter)
         vbox.addLayout(hbox)
@@ -504,27 +500,22 @@ class Window(QWidget):
         self.Deepsort_thread.jump_out = False
         self.Deepsort_thread.is_continue = True
 
-        # 按钮激活和关闭
         self.pauseBtn.setEnabled(True)
         self.playBtn.setEnabled(False)
         self.replayBtn.setEnabled(True)
 
-        # 开始进程
         self.yolothread.start()
         self.Deepsort_thread.start()
 
     def pause(self):
-        # 暂停分析
         self.yolothread.is_continue = False
         self.Deepsort_thread.is_continue = False
 
-        # 按钮激活和关闭
         self.pauseBtn.setEnabled(False)
         self.playBtn.setEnabled(True)
         self.replayBtn.setEnabled(True)
 
     def replay(self):
-        # 重新loop
         self.yolothread.jump_out = True
         self.Deepsort_thread.jump_out = True
 
