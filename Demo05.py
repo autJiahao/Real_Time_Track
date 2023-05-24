@@ -241,10 +241,9 @@ class DeepsortThread(QThread):
                     #  Process detections
                     for i, det in enumerate(pred):
                         p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
-                        im0, _ = im0s.copy(), getattr(dataset, 'frame', 0)
-                        annotator = Annotator(im0, line_width=2, pil=not ascii)
+                        annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
-                        # Rescale boxes from img_size to im0 size 将预测信息映射到原图
+                        # Rescale boxes from img_size to im0 size
                         det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
                         bbox_xywh = xyxy2xywh(det[:, :4]).cpu()
