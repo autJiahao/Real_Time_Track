@@ -146,7 +146,7 @@ class DeepsortThread(QThread):
         self.iou = 0.5
         self.jump_out = False
         self.is_continue = True  # continue/pause'
-        self.config_deepsort = '../deep_sort/configs/deep_sort.yaml'
+        self.config_deepsort = './deep_sort/configs/deep_sort.yaml'
 
     def run(self,
             imgsz=640,  # inference size (pixels)
@@ -162,7 +162,7 @@ class DeepsortThread(QThread):
             hide_conf=False,  # hide confidences
             half=False,  # use FP16 half-precision inference
             exist_ok=False,  # existing project/name ok, do not increment
-            project='runs/detect',  # save results to project/name
+            project='runs',  # save results to project/name
             name='exp',  # save results to project/name
             save_txt=False,  # save results to *.txt
             save_conf=False,  # save confidences in --save-txt labels
@@ -240,6 +240,7 @@ class DeepsortThread(QThread):
 
                     #  Process detections
                     for i, det in enumerate(pred):
+                        p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
                         im0, _ = im0s.copy(), getattr(dataset, 'frame', 0)
                         annotator = Annotator(im0, line_width=2, pil=not ascii)
 
@@ -255,6 +256,11 @@ class DeepsortThread(QThread):
 
                         cmap = plt.get_cmap('tab20b')
                         colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
+
+                        p = Path(p)  # to Path
+                        save_path = str(save_dir / p.name)  # img.jpg
+                        s += '%gx%g ' % img.shape[2:]  # print string
+                        txt_path = str(Path(save_dir)) + '/' + '.txt'
 
                         if len(outputs) > 0:
                             for idx, track in enumerate(outputs):
@@ -287,8 +293,12 @@ class DeepsortThread(QThread):
 
                         prev_trackers = {track[-1]: track[:-1] for track in outputs}
 
-                    im0 = annotator.result()
-                    self.send_img2.emit(im0)
+                        im0 = annotator.result()
+                        self.send_img2.emit(im0)
+
+            if save_txt:
+                s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
+                print(f"Results saved to {save_dir}{s}")
 
         except Exception as e:
             traceback.print_exc()
