@@ -203,6 +203,7 @@ class DeepsortThread(QThread):
 
             prev_trackers = {}
             trajectories = {}
+            write_data = []
 
             # while
             while True:
@@ -257,9 +258,6 @@ class DeepsortThread(QThread):
                         cmap = plt.get_cmap('tab20b')
                         colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
 
-                        p = Path(p)  # to Path
-                        save_path = str(save_dir / p.name)  # img.jpg
-                        s += '%gx%g ' % img.shape[2:]  # print string
                         txt_path = str(Path(save_dir)) + '/' + '.txt'
 
                         if len(outputs) > 0:
@@ -281,6 +279,11 @@ class DeepsortThread(QThread):
                                     for i in range(1, len(trajectories[id])):
                                         cv2.line(im0, trajectories[id][i - 1], trajectories[id][i], (0, 255, 0), 8)
 
+                                if save_txt:
+                                    x = int(((x1 + x2) / 2))
+                                    y = int(((y1 + y2) / 2))
+                                    write_data.append((id, x, y))
+
                                 for j, (output, conf) in enumerate(zip(outputs, confs)):
                                     bboxes = output[0:4]
                                     id = output[4]
@@ -291,21 +294,27 @@ class DeepsortThread(QThread):
                                     label = f'ID:{id}'  # 在目标的边界框上显示目标的ID信息
                                     annotator.box_label(bboxes, label, color=color_)
 
-                                    if save_txt:
-                                        # to MOT format
-                                        bbox_left = output[0]
-                                        bbox_top = output[1]
-                                        bbox_w = output[2] - output[0]
-                                        bbox_h = output[3] - output[1]
-                                        # Write MOT compliant results to file
-                                        with open(txt_path, 'a') as f:
-                                            f.write(('%g ' * 10 + '\n') % (
-                                            frame_idx + 1, id, bbox_left, bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))
-
                         prev_trackers = {track[-1]: track[:-1] for track in outputs}
 
                         im0 = annotator.result()
                         self.send_img2.emit(im0)
+
+                        write_data.sort()
+                        # Write MOT compliant results to file
+                        with open(txt_path, 'a') as f:
+                            for item in write_data:
+                                f.write(('%g ' * 3 + '\n') % item)
+
+                lists = []
+
+                with open(txt_path, 'r') as f:
+                    for line in f:
+                        lists.append(line.strip())
+
+                with open(txt_path, "w") as f:
+                    for item in sorted(lists):
+                        f.writelines(item)
+                        f.writelines('\n')
 
             if update:
                 strip_optimizer(self.weights)  # update model (to fix SourceChangeWarning)
