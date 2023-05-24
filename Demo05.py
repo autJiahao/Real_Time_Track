@@ -24,7 +24,7 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))
 
 from utils.datasets import LoadImages
-from utils.general import (check_img_size, cv2, xyxy2xywh, non_max_suppression, scale_coords, increment_path)
+from utils.general import (check_img_size, cv2, xyxy2xywh, non_max_suppression, scale_coords, increment_path, strip_optimizer)
 from utils.plots import Annotator, colors
 from utils.torch_utils import select_device
 from deep_sort.deep_sort import DeepSort
@@ -100,20 +100,19 @@ class Yolov5Thread(QThread):
                     path, img, im0s, vid_cap = next(dataset)
                     img = torch.from_numpy(img).to(device)
                     img = img.half() if half else img.float()  # uint8 to fp16/32
-                    img /= 255.0  # 0 - 255 to 0.0 - 1.0
-
+                    img /= 255.0
                     if img.ndimension() == 3:
                         img = img.unsqueeze(0)
 
-                    pred = model(img, augment=augment)[0]
+                    # Inference
+                    pred = model(img, augment=augment, visualize=visualize)[0]
 
                     # Apply NMS
-                    pred = non_max_suppression(pred, self.conf, self.iou, classes, agnostic_nms, max_det=max_det)
+                    pred = non_max_suppression(pred, self.conf, self.iou, classes, agnostic_nms)
 
                     # Process detections
                     for i, det in enumerate(pred):  # detections per image
-                        im0 = im0s.copy()
-
+                        p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
                         annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
                         if len(det):
@@ -298,6 +297,9 @@ class DeepsortThread(QThread):
             if save_txt:
                 s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
                 print(f"Results saved to {save_dir}{s}")
+
+            if update:
+                strip_optimizer(self.weights)  # update model (to fix SourceChangeWarning)
 
         except Exception as e:
             traceback.print_exc()
