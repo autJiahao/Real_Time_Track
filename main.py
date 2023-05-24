@@ -1,8 +1,6 @@
 import sys
 import os
 import traceback
-import shutil
-import cv2
 
 import torch
 import numpy as np
@@ -11,14 +9,14 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QLabel, QVBoxLayout, QStyle, \
     QFileDialog, QSplitter, QFrame
 from pathlib import Path
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from matplotlib import pyplot as plt
 
 from deep_sort.utils.parser import get_config
 from models.experimental import attempt_load
 
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # YOLOv5 root directory
+ROOT = FILE.parents[0]
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))
@@ -36,8 +34,7 @@ class Yolov5Thread(QThread):
 
     def __init__(self):
         super(Yolov5Thread, self).__init__()
-        self.weights = './yolov5s.pt'
-        self.current_weight = './yolov5s.pt'
+        self.weights = '.\yolov5s.pt'
         self.source = ''
         self.conf = 0.3
         self.iou = 0.5
@@ -67,26 +64,18 @@ class Yolov5Thread(QThread):
             # Load model
             model = attempt_load(self.weights, map_location=device)  # load FP32 model
             stride = int(model.stride.max())  # model stride
-            imgsz = check_img_size(imgsz, s=stride)  # check image size
             if half:
                 model.half()  # to FP16
 
+            imgsz = check_img_size(imgsz, s=stride)  # check image size
             dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
             # COCO
-            names = model.module.names if hasattr(model, 'module') else model.names  # get class names
             dataset = iter(dataset)
+            names = model.module.names if hasattr(model, 'module') else model.names  # get class names
 
             while True:
                 if self.jump_out:
                     break
-
-                # change model
-                if self.current_weight != self.weights:
-                    # Load model
-                    model = attempt_load(self.weights, map_location=device)  # load FP32 model
-                    stride = int(model.stride.max())  # model stride
-                    imgsz = check_img_size(imgsz, s=stride)  # check image size
-                    names = model.module.names if hasattr(model, 'module') else model.names  # get class names
 
                     if half:
                         model.half()  # to FP16
@@ -94,8 +83,6 @@ class Yolov5Thread(QThread):
                     # Run inference
                     if device.type != 'cpu':
                         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
-
-                    self.current_weight = self.weights
 
                 if self.is_continue:
                     path, img, im0s, vid_cap = next(dataset)
@@ -139,14 +126,13 @@ class DeepsortThread(QThread):
 
     def __init__(self):
         super(DeepsortThread, self).__init__()
-        self.weights = './yolov5s.pt'
-        self.current_weight = './yolov5s.pt'
+        self.weights = '.\yolov5s.pt'
         self.source = ''
         self.conf = 0.3
         self.iou = 0.5
         self.jump_out = False
         self.is_continue = True  # continue/pause'
-        self.config_deepsort = './deep_sort/configs/deep_sort.yaml'
+        self.config_deepsort = '.\deep_sort.yaml'
 
     def run(self,
             imgsz=640,  # inference size (pixels)
@@ -183,9 +169,9 @@ class DeepsortThread(QThread):
             half &= device.type != 'cpu'  # half precision only supported on CUDA
 
             model = attempt_load(self.weights, map_location=device)  # load FP32 model
-
             stride = int(model.stride.max())  # model stride
             imgsz = check_img_size(imgsz, s=stride)  # check image size
+            names = model.module.names if hasattr(model, 'module') else model.names  # get class names
 
             # Directories
             save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
@@ -210,22 +196,11 @@ class DeepsortThread(QThread):
                 if self.jump_out:
                     break
 
-                # change model
-                if self.current_weight != self.weights:
-                    # Load model
-                    model = attempt_load(self.weights, map_location=device)  # load FP32 model
-                    stride = int(model.stride.max())  # model stride
-                    imgsz = check_img_size(imgsz, s=stride)  # check image size
-                    names = model.module.names if hasattr(model, 'module') else model.names  # get class names
-
                     if half:
                         model.half()  # to FP16
 
-                    # Run inference
                     if device.type != 'cpu':
                         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
-
-                    self.current_weight = self.weights
 
                 if self.is_continue:
                     path, img, im0s, vid_cap = next(dataset)
@@ -347,17 +322,6 @@ class Window(QWidget):
         self.replayBtn.setEnabled(False)
         self.replayBtn.clicked.connect(self.replay)
 
-        self.comboBox = QtWidgets.QComboBox()
-        self.comboBox.clear()
-        self.pt_list = os.listdir('./pt')
-        self.pt_list = [file for file in self.pt_list if file.endswith('.pt')]
-        self.comboBox.addItems(self.pt_list)
-        self.qtimer_search = QTimer(self)
-        self.qtimer_search.timeout.connect(lambda: self.search_pt)
-        self.qtimer_search.start(2000)
-        self.model_type = self.comboBox.currentText()
-        self.comboBox.currentTextChanged.connect(self.change_model)  # 发送信号
-
         self.FileBtn = QPushButton('Select Video')
         self.FileBtn.clicked.connect(self.open_file)
 
@@ -377,7 +341,6 @@ class Window(QWidget):
 
         hbox = QHBoxLayout()
         hbox.addWidget(self.FileBtn)
-        hbox.addWidget(self.comboBox)
         hbox.addWidget(self.playBtn)
         hbox.addWidget(self.pauseBtn)
         hbox.addWidget(self.replayBtn)
@@ -392,31 +355,14 @@ class Window(QWidget):
             # yolov5 thread
             self.yolothread = Yolov5Thread()
             self.yolothread.source = '0'
-            self.model = self.comboBox.currentText()
-            self.yolothread.weights = "./pt/%s" % self.model
+            self.yolothread.weights = '.\yolov5s.pt'
             self.yolothread.send_img.connect(lambda x: self.show_image(x, self.left_label))
 
             # Deepsort thread
             self.Deepsort_thread = DeepsortThread()
             self.Deepsort_thread.source = '0'
-            self.model = self.comboBox.currentText()
-            self.Deepsort_thread.weights = "./pt/%s" % self.model
+            self.Deepsort_thread.weights = '.\yolov5s.pt'
             self.Deepsort_thread.send_img2.connect(lambda x: self.show_image2(x, self.right_label))
-
-        except Exception as e:
-
-            traceback.print_exc()
-
-    def search_pt(self):
-        try:
-            pt_list = os.listdir('./pt')
-            pt_list = [file for file in pt_list if file.endswith('.pt')]
-            pt_list.sort(key=lambda x: os.path.getsize('./pt/' + x))
-
-            if pt_list != self.pt_list:
-                self.pt_list = pt_list
-                self.comboBox.clear()
-                self.comboBox.addItems(self.pt_list)
 
         except Exception as e:
 
@@ -438,7 +384,7 @@ class Window(QWidget):
 
     def change_model(self, x):
         self.model_type = self.comboBox.currentText()
-        self.yolothread.weights = "./pt/%s" % self.model_type
+        self.yolothread.weights = self.model_type
 
     def show_image(self, img_src, label):
         try:
