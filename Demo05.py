@@ -24,7 +24,8 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))
 
 from utils.datasets import LoadImages
-from utils.general import (check_img_size, cv2, xyxy2xywh, non_max_suppression, scale_coords, increment_path, strip_optimizer)
+from utils.general import (check_img_size, cv2, xyxy2xywh, non_max_suppression, scale_coords, increment_path,
+                           strip_optimizer)
 from utils.plots import Annotator, colors
 from utils.torch_utils import select_device
 from deep_sort.deep_sort import DeepSort
@@ -163,9 +164,7 @@ class DeepsortThread(QThread):
             exist_ok=False,  # existing project/name ok, do not increment
             project='runs',  # save results to project/name
             name='exp',  # save results to project/name
-            save_txt=False,  # save results to *.txt
-            save_conf=False,  # save confidences in --save-txt labels
-            save_crop=False,  # save cropped prediction boxes
+            save_txt=True,  # save results to *.txt
             ):
 
         try:
@@ -190,7 +189,10 @@ class DeepsortThread(QThread):
 
             # Directories
             save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
-            (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+            save_dir.mkdir(parents=True, exist_ok=True)  # make dir
+
+            txt_file_name = self.source.split('/')[-1].split('.')[0]
+            txt_path = str(Path(save_dir)) + '/' + txt_file_name + '.txt'
 
             if half:
                 model.half()  # to FP16
@@ -198,6 +200,7 @@ class DeepsortThread(QThread):
             # load videos
             dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
             dataset = iter(dataset)
+
             prev_trackers = {}
             trajectories = {}
 
@@ -239,7 +242,7 @@ class DeepsortThread(QThread):
 
                     #  Process detections
                     for i, det in enumerate(pred):
-                        p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
+                        p, s, im0, frame, frame_idx = path, '', im0s.copy(), getattr(dataset, 'frame', 0), 0
                         annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
                         # Rescale boxes from img_size to im0 size
@@ -250,7 +253,6 @@ class DeepsortThread(QThread):
                         confs = det[:, 4:5].cpu()
 
                         outputs = deepsort.update(bbox_xywh, confs, im0)
-                        print(outputs)
 
                         cmap = plt.get_cmap('tab20b')
                         colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
@@ -289,14 +291,21 @@ class DeepsortThread(QThread):
                                     label = f'ID:{id}'  # 在目标的边界框上显示目标的ID信息
                                     annotator.box_label(bboxes, label, color=color_)
 
+                                    if save_txt:
+                                        # to MOT format
+                                        bbox_left = output[0]
+                                        bbox_top = output[1]
+                                        bbox_w = output[2] - output[0]
+                                        bbox_h = output[3] - output[1]
+                                        # Write MOT compliant results to file
+                                        with open(txt_path, 'a') as f:
+                                            f.write(('%g ' * 10 + '\n') % (
+                                            frame_idx + 1, id, bbox_left, bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))
+
                         prev_trackers = {track[-1]: track[:-1] for track in outputs}
 
                         im0 = annotator.result()
                         self.send_img2.emit(im0)
-
-            if save_txt:
-                s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-                print(f"Results saved to {save_dir}{s}")
 
             if update:
                 strip_optimizer(self.weights)  # update model (to fix SourceChangeWarning)
