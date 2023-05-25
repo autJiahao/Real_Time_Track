@@ -26,6 +26,8 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(BASE_DIR, r'venv\site-packages'))
+
 
 class Yolov5Thread(QThread):
     send_img = pyqtSignal(np.ndarray)
@@ -53,66 +55,69 @@ class Yolov5Thread(QThread):
             hide_conf=False,  # hide confidences
             half=False,  # use FP16 half-precision inference
             ):
+        try:
+            print("Yolo start")
+            device = select_device(device)
+            half &= device.type != 'cpu'  # half precision only supported on CUDA
 
-        print("Yolo start")
-        device = select_device(device)
-        half &= device.type != 'cpu'  # half precision only supported on CUDA
+            # Load model
+            model = attempt_load(self.weights, map_location=device)  # load FP32 model
+            stride = int(model.stride.max())  # model stride
+            if half:
+                model.half()  # to FP16
 
-        # Load model
-        model = attempt_load(self.weights, map_location=device)  # load FP32 model
-        stride = int(model.stride.max())  # model stride
-        if half:
-            model.half()  # to FP16
+            imgsz = check_img_size(imgsz, s=stride)  # check image size
+            dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
+            # COCO
+            dataset = iter(dataset)
+            names = model.module.names if hasattr(model, 'module') else model.names  # get class names
 
-        imgsz = check_img_size(imgsz, s=stride)  # check image size
-        dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
-        # COCO
-        dataset = iter(dataset)
-        names = model.module.names if hasattr(model, 'module') else model.names  # get class names
+            while True:
+                if self.jump_out:
+                    break
 
-        while True:
-            if self.jump_out:
-                break
+                    if half:
+                        model.half()  # to FP16
 
-                if half:
-                    model.half()  # to FP16
+                    # Run inference
+                    if device.type != 'cpu':
+                        model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
 
-                # Run inference
-                if device.type != 'cpu':
-                    model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+                if self.is_continue:
+                    path, img, im0s, vid_cap = next(dataset)
+                    img = torch.from_numpy(img).to(device)
+                    img = img.half() if half else img.float()  # uint8 to fp16/32
+                    img /= 255.0
+                    if img.ndimension() == 3:
+                        img = img.unsqueeze(0)
 
-            if self.is_continue:
-                path, img, im0s, vid_cap = next(dataset)
-                img = torch.from_numpy(img).to(device)
-                img = img.half() if half else img.float()  # uint8 to fp16/32
-                img /= 255.0
-                if img.ndimension() == 3:
-                    img = img.unsqueeze(0)
+                    # Inference
+                    pred = model(img, augment=augment, visualize=visualize)[0]
 
-                # Inference
-                pred = model(img, augment=augment, visualize=visualize)[0]
+                    # Apply NMS
+                    pred = non_max_suppression(pred, self.conf, self.iou, classes, agnostic_nms)
 
-                # Apply NMS
-                pred = non_max_suppression(pred, self.conf, self.iou, classes, agnostic_nms)
+                    # Process detections
+                    for i, det in enumerate(pred):  # detections per image
+                        p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
+                        annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
-                # Process detections
-                for i, det in enumerate(pred):  # detections per image
-                    p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
-                    annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+                        if len(det):
+                            det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
-                    if len(det):
-                        det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                            for *xyxy, conf, cls in reversed(det):
+                                lbl = names[int(cls)]
+                                if lbl in ['bicycle', 'car', 'truck', 'motorcycle']:
+                                    c = int(cls)  # integer class
+                                    label = None if hide_labels else (
+                                        names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                                    annotator.box_label(xyxy, label, color=colors(c, True))
 
-                        for *xyxy, conf, cls in reversed(det):
-                            lbl = names[int(cls)]
-                            if lbl in ['bicycle', 'car', 'truck', 'motorcycle']:
-                                c = int(cls)  # integer class
-                                label = None if hide_labels else (
-                                    names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                                annotator.box_label(xyxy, label, color=colors(c, True))
+                    im0 = annotator.result()
+                    self.send_img.emit(im0)
 
-                im0 = annotator.result()
-                self.send_img.emit(im0)
+        except Exception as e:
+            traceback.print_exc()
 
 
 class DeepsortThread(QThread):
@@ -145,136 +150,140 @@ class DeepsortThread(QThread):
             save_txt=True,  # save results to *.txt
             ):
 
-        # initialize deepsort
-        cfg = get_config()
-        cfg.merge_from_file(self.config_deepsort)
-        deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
-                            max_dist=cfg.DEEPSORT.MAX_DIST,
-                            max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
-                            max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT,
-                            nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                            use_cuda=True)
+        try:
+            # initialize deepsort
+            cfg = get_config()
+            cfg.merge_from_file(self.config_deepsort)
+            deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+                                max_dist=cfg.DEEPSORT.MAX_DIST,
+                                max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
+                                max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT,
+                                nn_budget=cfg.DEEPSORT.NN_BUDGET,
+                                use_cuda=True)
 
-        # Initialize yolov5 detection
-        device = select_device(device)
-        half &= device.type != 'cpu'  # half precision only supported on CUDA
+            # Initialize yolov5 detection
+            device = select_device(device)
+            half &= device.type != 'cpu'  # half precision only supported on CUDA
 
-        model = attempt_load(self.weights, map_location=device)  # load FP32 model
-        stride = int(model.stride.max())  # model stride
-        imgsz = check_img_size(imgsz, s=stride)  # check image size
-        names = model.module.names if hasattr(model, 'module') else model.names  # get class names
+            model = attempt_load(self.weights, map_location=device)  # load FP32 model
+            stride = int(model.stride.max())  # model stride
+            imgsz = check_img_size(imgsz, s=stride)  # check image size
+            names = model.module.names if hasattr(model, 'module') else model.names  # get class names
 
-        if half:
-            model.half()  # to FP16
+            if half:
+                model.half()  # to FP16
 
-        # load videos
-        dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
-        dataset = iter(dataset)
+            # load videos
+            dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
+            dataset = iter(dataset)
 
-        prev_trackers = {}
-        trajectories = {}
-        write_data = []
+            prev_trackers = {}
+            trajectories = {}
+            write_data = []
 
-        # while
-        while True:
-            if self.jump_out:
-                break
+            # while
+            while True:
+                if self.jump_out:
+                    break
 
-                if half:
-                    model.half()  # to FP16
+                    if half:
+                        model.half()  # to FP16
 
-                if device.type != 'cpu':
-                    model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+                    if device.type != 'cpu':
+                        model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
 
-            if self.is_continue:
-                path, img, im0s, vid_cap = next(dataset)
-                img = torch.from_numpy(img).to(device)
-                img = img.half() if half else img.float()  # uint8 to fp16/32
-                img /= 255.0
-                if img.ndimension() == 3:
-                    img = img.unsqueeze(0)
+                if self.is_continue:
+                    path, img, im0s, vid_cap = next(dataset)
+                    img = torch.from_numpy(img).to(device)
+                    img = img.half() if half else img.float()  # uint8 to fp16/32
+                    img /= 255.0
+                    if img.ndimension() == 3:
+                        img = img.unsqueeze(0)
 
-                # Inference
-                pred = model(img, augment=augment, visualize=visualize)[0]
+                    # Inference
+                    pred = model(img, augment=augment, visualize=visualize)[0]
 
-                # Apply NMS
-                pred = non_max_suppression(pred, self.conf, self.iou, classes, agnostic_nms)
+                    # Apply NMS
+                    pred = non_max_suppression(pred, self.conf, self.iou, classes, agnostic_nms)
 
-                #  Process detections
-                for i, det in enumerate(pred):
-                    p, s, im0, frame, frame_idx = path, '', im0s.copy(), getattr(dataset, 'frame', 0), 0
-                    annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+                    #  Process detections
+                    for i, det in enumerate(pred):
+                        p, s, im0, frame, frame_idx = path, '', im0s.copy(), getattr(dataset, 'frame', 0), 0
+                        annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
-                    # Rescale boxes from img_size to im0 size
-                    det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                        # Rescale boxes from img_size to im0 size
+                        det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
-                    bbox_xywh = xyxy2xywh(det[:, :4]).cpu()
+                        bbox_xywh = xyxy2xywh(det[:, :4]).cpu()
 
-                    confs = det[:, 4:5].cpu()
+                        confs = det[:, 4:5].cpu()
 
-                    outputs = deepsort.update(bbox_xywh, confs, im0)
+                        outputs = deepsort.update(bbox_xywh, confs, im0)
 
-                    cmap = plt.get_cmap('tab20b')
-                    colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
+                        cmap = plt.get_cmap('tab20b')
+                        colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
 
-                    if len(outputs) > 0:
-                        for idx, track in enumerate(outputs):
-                            x1, y1, x2, y2, id = track
+                        if len(outputs) > 0:
+                            for idx, track in enumerate(outputs):
+                                x1, y1, x2, y2, id = track
 
-                            if id in prev_trackers:
-                                prev_x1, prev_y1, prev_x2, prev_y2 = prev_trackers[id]
-                                cv2.line(im0, (int((prev_x1 + prev_x2) / 2), int((prev_y1 + prev_y2) / 2)),
-                                         (int((x1 + x2) / 2), int((y1 + y2) / 2)), (0, 255, 0), 8)
+                                if id in prev_trackers:
+                                    prev_x1, prev_y1, prev_x2, prev_y2 = prev_trackers[id]
+                                    cv2.line(im0, (int((prev_x1 + prev_x2) / 2), int((prev_y1 + prev_y2) / 2)),
+                                             (int((x1 + x2) / 2), int((y1 + y2) / 2)), (0, 255, 0), 8)
 
-                            if id not in trajectories:
-                                trajectories[id] = [(int((x1 + x2) / 2), int((y1 + y2) / 2))]
-                            else:
-                                trajectories[id].append((int((x1 + x2) / 2), int((y1 + y2) / 2)))
+                                if id not in trajectories:
+                                    trajectories[id] = [(int((x1 + x2) / 2), int((y1 + y2) / 2))]
+                                else:
+                                    trajectories[id].append((int((x1 + x2) / 2), int((y1 + y2) / 2)))
 
-                            # Draw trajectory
-                            if len(trajectories[id]) > 1:
-                                for i in range(1, len(trajectories[id])):
-                                    cv2.line(im0, trajectories[id][i - 1], trajectories[id][i], (0, 255, 0), 8)
+                                # Draw trajectory
+                                if len(trajectories[id]) > 1:
+                                    for i in range(1, len(trajectories[id])):
+                                        cv2.line(im0, trajectories[id][i - 1], trajectories[id][i], (0, 255, 0), 8)
 
-                            if save_txt:
-                                x = int(((x1 + x2) / 2))
-                                y = int(((y1 + y2) / 2))
-                                write_data.append((id, x, y))
+                                if save_txt:
+                                    x = int(((x1 + x2) / 2))
+                                    y = int(((y1 + y2) / 2))
+                                    write_data.append((id, x, y))
 
-                            for j, (output, conf) in enumerate(zip(outputs, confs)):
-                                bboxes = output[0:4]
-                                id = output[4]
+                                for j, (output, conf) in enumerate(zip(outputs, confs)):
+                                    bboxes = output[0:4]
+                                    id = output[4]
 
-                                color_ = colors[int(id) % len(colors)]
-                                color_ = [i * 255 for i in color_]
+                                    color_ = colors[int(id) % len(colors)]
+                                    color_ = [i * 255 for i in color_]
 
-                                label = f'ID:{id}'
-                                annotator.box_label(bboxes, label, color=color_)
+                                    label = f'ID:{id}'
+                                    annotator.box_label(bboxes, label, color=color_)
 
-                    prev_trackers = {track[-1]: track[:-1] for track in outputs}
+                        prev_trackers = {track[-1]: track[:-1] for track in outputs}
 
-                    im0 = annotator.result()
-                    self.send_img2.emit(im0)
+                        im0 = annotator.result()
+                        self.send_img2.emit(im0)
 
-                    write_data.sort()
-                    # Write MOT compliant results to file
-                    with open(os.path.join(BASE_DIR, 'txt_path.txt'), 'a') as f:
-                        for item in write_data:
-                            f.write(('%g ' * 3 + '\n') % item)
+                        write_data.sort()
+                        # Write MOT compliant results to file
+                        with open(os.path.join(BASE_DIR, 'data.txt'), 'a') as f:
+                            for item in write_data:
+                                f.write(('%g ' * 3 + '\n') % item)
 
-            lists = []
+                lists = []
 
-            with open(os.path.join(BASE_DIR, 'txt_path.txt'), 'r') as f:
-                for line in f:
-                    lists.append(line.strip())
+                with open(os.path.join(BASE_DIR, 'data.txt'), 'r') as f:
+                    for line in f:
+                        lists.append(line.strip())
 
-            with open(os.path.join(BASE_DIR, 'txt_path.txt'), "w") as f:
-                for item in sorted(lists):
-                    f.writelines(item)
-                    f.writelines('\n')
+                with open(os.path.join(BASE_DIR, 'data.txt'), "w") as f:
+                    for item in sorted(lists):
+                        f.writelines(item)
+                        f.writelines('\n')
 
-        if update:
-            strip_optimizer(self.weights)  # update model (to fix SourceChangeWarning)
+            if update:
+                strip_optimizer(self.weights)  # update model (to fix SourceChangeWarning)
+
+        except Exception as e:
+            traceback.print_exc()
 
 
 class Window(QWidget):
