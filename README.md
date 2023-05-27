@@ -40,13 +40,39 @@ Step 2️⃣ Navigate to the downloaded folder and change directory to our file.
 
     cd Real_Time_Track
 
-Step️ 3️⃣ Install the dependencies listed in the requirement.txt file.
+Step️ 3️⃣ Create a virtual environment.（We suggest you are using python 3.9).
+<br />
+    
+    go to setting, click project:Real_Time_Track-main,then click Python Interpreter, add interpreter, Add Local interpreter
+<br />
+![](./png/1.png)
+<br />
+
+    Environment: new<br />
+    Location: path\to\the\project\venv<br />
+    Base interpreter: choose<br />
+    
+![](./png/2.png)
+<br />
+
+Step️ 4️⃣ Activate the virtual environment.
+<br />
+
+    venv\Scripts\activate
+
+Step️ 5️⃣ Install the dependencies listed in the requirement.txt file.
 <br />
     
     pip install -r requirements.txt  # install
-
+    
+<br />
+step 6️⃣ Start main.py in a virtual environment
 
 <br />
+    
+    python main.py
+
+
 
 ## Summary
 
