@@ -48,11 +48,12 @@ Step️ 3️⃣ Create a virtual environment.（We suggest you are using python 
 ![](./png/1.png)
 <br />
 
-    Environment: new<br />
-    Location: path\to\the\project\venv<br />
-    Base interpreter: choose<br />
-    
+    Environment: new
+    Location: path\to\the\project\venv
+    Base interpreter: choose
+      
 ![](./png/2.png)
+
 <br />
 
 Step️ 4️⃣ Activate the virtual environment.
