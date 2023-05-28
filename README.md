@@ -15,7 +15,7 @@
 
 >The interface includes "Play," "Pause," and "Replay" buttons. Clicking the "Play" button starts the object detection and tracking. The "Pause" button allows pausing the detection and tracking process, and the "Replay" button restarts the detection and tracking from the beginning.
 
-<img width="1439" alt="Screenshot 2023-05-17 at 1 14 08 PM" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/20b92c3c-78e8-4359-b100-332e6b97d476">
+<img width="736" alt="Screenshot 2023-05-27 at 10 48 58 PM" src="https://github.com/autJiahao/Real_Time_Track/assets/45887454/f8aeacf2-4053-47fc-8909-46125c814151">
 
 >A dropdown list is provided for selecting the model, allowing the user to choose from various pretrained YOLOv5 models. The selected model is used for real-time object detection and tracking.
 
